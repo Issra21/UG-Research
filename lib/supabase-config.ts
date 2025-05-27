@@ -1,3 +1,4 @@
+// Remplacer la fonction getURL par celle-ci pour s'assurer que l'URL est correcte
 export const getURL = () => {
   let url =
     process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this in your .env file
@@ -12,6 +13,7 @@ export const getURL = () => {
   return url
 }
 
+// Simplifier la fonction de callback pour éviter les problèmes
 export const getAuthCallbackURL = () => {
   return `${getURL()}auth/callback`
 }
