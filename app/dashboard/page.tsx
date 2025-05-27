@@ -40,18 +40,15 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        console.log("No user found, redirecting to signin")
         router.push("/auth/signin")
         return
       }
 
       if (!profile) {
-        console.log("No profile found, redirecting to complete profile")
         router.push("/auth/complete-profile")
         return
       }
 
-      // User is authenticated and has profile, load dashboard data
       loadDashboardData()
     }
   }, [user, profile, authLoading, router])
@@ -60,9 +57,6 @@ export default function DashboardPage() {
     if (!user || !profile) return
 
     try {
-      console.log("Loading dashboard data for user:", user.email)
-
-      // Load user statistics
       const [publicationsRes, projectsRes] = await Promise.all([
         supabase
           .from("publications")
@@ -87,8 +81,6 @@ export default function DashboardPage() {
         setActiveProjects(projectsRes.data)
         setStats((prev) => ({ ...prev, projects: projectsRes.data.length }))
       }
-
-      console.log("Dashboard data loaded successfully")
     } catch (error) {
       console.error("Error loading dashboard data:", error)
     } finally {
@@ -96,7 +88,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Show loading while checking auth or loading data
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -108,13 +99,7 @@ export default function DashboardPage() {
     )
   }
 
-  // If no user, don't render anything (redirect will happen)
-  if (!user) {
-    return null
-  }
-
-  // If no profile, don't render anything (redirect will happen)
-  if (!profile) {
+  if (!user || !profile) {
     return null
   }
 
@@ -125,7 +110,6 @@ export default function DashboardPage() {
         <Sidebar />
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
-            {/* Welcome Section */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Bonjour, {profile.first_name} {profile.last_name}
@@ -141,7 +125,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -189,7 +172,6 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Recent Publications */}
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
@@ -237,9 +219,7 @@ export default function DashboardPage() {
                 </Card>
               </div>
 
-              {/* Quick Actions & Active Projects */}
               <div className="space-y-6">
-                {/* Quick Actions */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Actions rapides</CardTitle>
@@ -272,7 +252,6 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                {/* Active Projects */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Projets actifs</CardTitle>
@@ -303,7 +282,6 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                {/* Upcoming Events */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Événements à venir</CardTitle>

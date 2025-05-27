@@ -19,15 +19,13 @@ export default function SignInPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo") || "/dashboard"
 
   useEffect(() => {
-    // If user is already authenticated, redirect
     if (!authLoading && user) {
-      console.log("User already authenticated, redirecting...")
       router.push(redirectTo)
     }
   }, [user, authLoading, router, redirectTo])
@@ -38,40 +36,25 @@ export default function SignInPage() {
     setError("")
 
     try {
-      console.log("Attempting to sign in with:", email)
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       })
 
       if (error) {
-        console.error("Sign in error:", error)
         throw error
       }
 
-      if (data.user) {
-        console.log("Sign in successful:", data.user.email)
-
-        // Check if email is confirmed
-        if (!data.user.email_confirmed_at) {
-          setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
-          setLoading(false)
-          return
-        }
-
-        // The AuthProvider will handle the rest
-        console.log("Redirecting to:", redirectTo)
+      if (data.user && !data.user.email_confirmed_at) {
+        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
+        setLoading(false)
+        return
       }
     } catch (error: any) {
-      console.error("Login error:", error)
-
       if (error.message.includes("Invalid login credentials")) {
         setError("Email ou mot de passe incorrect")
       } else if (error.message.includes("Email not confirmed")) {
         setError("Veuillez confirmer votre email avant de vous connecter")
-      } else if (error.message.includes("Too many requests")) {
-        setError("Trop de tentatives de connexion. Veuillez patienter quelques minutes.")
       } else {
         setError(error.message || "Erreur de connexion")
       }
@@ -80,19 +63,17 @@ export default function SignInPage() {
     }
   }
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Vérification de l'authentification...</span>
+          <span>Vérification de l&apos;authentification...</span>
         </div>
       </div>
     )
   }
 
-  // If user is authenticated, don't show the form
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -181,7 +162,7 @@ export default function SignInPage() {
               </p>
               <p className="mt-2 text-sm">
                 <Link href="/auth/resend-confirmation" className="text-blue-600 hover:text-blue-500">
-                  Renvoyer l'email de confirmation
+                  Renvoyer l&apos;email de confirmation
                 </Link>
               </p>
             </div>

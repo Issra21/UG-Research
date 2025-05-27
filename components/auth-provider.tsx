@@ -44,23 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    // Get initial session
     const getInitialSession = async () => {
       try {
         const {
           data: { session },
-          error,
         } = await supabase.auth.getSession()
-
-        if (error) {
-          console.error("Error getting session:", error)
-          if (mounted) {
-            setLoading(false)
-          }
-          return
-        }
-
-        console.log("Initial session:", session?.user?.email)
 
         if (mounted) {
           setSession(session)
@@ -82,12 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email)
-
       if (!mounted) return
 
       setSession(session)
@@ -96,7 +81,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         await loadProfile(session.user.id)
 
-        // Redirect to dashboard after successful authentication
         if (event === "SIGNED_IN" && typeof window !== "undefined") {
           const currentPath = window.location.pathname
           if (currentPath.startsWith("/auth/")) {
@@ -107,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null)
         setLoading(false)
 
-        // Redirect to signin if signed out
         if (event === "SIGNED_OUT" && typeof window !== "undefined") {
           const currentPath = window.location.pathname
           const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
@@ -126,20 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      console.log("Loading profile for user:", userId)
-
       const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
 
       if (error) {
-        console.error("Profile error:", error)
         if (error.code === "PGRST116") {
-          console.log("Profile not found - user needs to create one")
           setProfile(null)
         } else {
           throw error
         }
       } else {
-        console.log("Profile loaded:", data.email)
         setProfile(data)
       }
     } catch (error) {

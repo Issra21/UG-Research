@@ -1,11 +1,13 @@
 import { createServerComponentClient } from "@/lib/supabase-server"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
+import type { NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get("token_hash")
   const type = searchParams.get("type") as EmailOtpType | null
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
   console.log("Confirmation route called with:", {
     token_hash: !!token_hash,

@@ -1,15 +1,6 @@
-import { createServerComponentClient } from "@/lib/supabase-server"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get("code")
-
-  if (code) {
-    const supabase = createServerComponentClient()
-    await supabase.auth.exchangeCodeForSession(code)
-  }
-
+export async function GET() {
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL("/dashboard", request.url))
+  return NextResponse.redirect(new URL("/dashboard", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"))
 }
