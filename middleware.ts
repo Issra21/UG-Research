@@ -1,13 +1,31 @@
-import { createServerComponentClient } from "@/lib/supabase"
+import { createClient } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
-  const supabase = createServerComponentClient()
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  // Create a Supabase client configured to use cookies
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+
+  // Get session from request headers
+  const authHeader = request.headers.get("authorization")
+  let session = null
+
+  if (authHeader) {
+    try {
+      const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""))
+      if (data.user) {
+        session = { user: data.user }
+      }
+    } catch (error) {
+      console.error("Middleware auth error:", error)
+    }
+  }
 
   // Protected routes that require authentication
   const protectedRoutes = [
