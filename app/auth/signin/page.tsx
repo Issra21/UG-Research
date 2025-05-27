@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/components/auth-provider"
 import { Loader2 } from "lucide-react"
 
 export default function SignInPage() {
@@ -18,16 +17,8 @@ export default function SignInPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { user, loading: authLoading } = useAuth()
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard"
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.push(redirectTo)
-    }
-  }, [user, authLoading, router, redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,20 +26,24 @@ export default function SignInPage() {
     setError("")
 
     try {
+      console.log("Tentative de connexion avec:", email)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password: password,
+        password,
       })
 
       if (error) {
+        console.error("Erreur de connexion:", error.message)
         throw error
       }
 
-      if (data.user && !data.user.email_confirmed_at) {
-        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
-        setLoading(false)
-        return
-      }
+      console.log("Connexion réussie:", data.user?.id)
+      setSuccess(true)
+
+      // Redirection après un court délai pour permettre à la session d'être établie
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } catch (error: any) {
       if (error.message.includes("Invalid login credentials")) {
         setError("Email ou mot de passe incorrect")
@@ -60,28 +55,6 @@ export default function SignInPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Vérification de l&apos;authentification...</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Redirection en cours...</span>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -103,49 +76,56 @@ export default function SignInPage() {
             <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Adresse email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre.email@exemple.com"
-                  required
-                  disabled={loading}
-                />
+            {success ? (
+              <div className="text-center py-4">
+                <Loader2 className="h-8 w-8 text-blue-600 mx-auto animate-spin" />
+                <p className="mt-2 text-sm text-gray-600">Connexion réussie! Redirection en cours...</p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connexion en cours...
-                  </>
-                ) : (
-                  "Se connecter"
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </Button>
-            </form>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Adresse email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre.email@exemple.com"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    "Se connecter"
+                  )}
+                </Button>
+              </form>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
