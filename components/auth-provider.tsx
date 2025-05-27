@@ -39,11 +39,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadProfile = async (userId: string) => {
       try {
         console.log("Chargement du profil pour l'utilisateur:", userId)
+
+        // Vérifier d'abord si le profil existe
         const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
 
         if (error) {
           console.error("Erreur lors du chargement du profil:", error)
-          setProfile(null)
+
+          // Si le profil n'existe pas, essayer de le créer
+          if (error.code === "PGRST116") {
+            console.log("Profil non trouvé, tentative de création...")
+            await createProfile(userId)
+          } else {
+            setProfile(null)
+          }
         } else {
           console.log("Profil chargé avec succès:", data)
           setProfile(data)
@@ -51,6 +60,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Exception lors du chargement du profil:", error)
         setProfile(null)
+      }
+    }
+
+    // Fonction pour créer un profil s'il n'existe pas
+    const createProfile = async (userId: string) => {
+      try {
+        // Obtenir les informations de l'utilisateur
+        const { data: userData } = await supabase.auth.getUser(userId)
+
+        if (!userData.user) {
+          console.error("Utilisateur non trouvé")
+          return
+        }
+
+        const { email, user_metadata } = userData.user
+
+        // Créer le profil
+        const { data, error } = await supabase
+          .from("profiles")
+          .insert({
+            id: userId,
+            email: email || "",
+            first_name: user_metadata?.first_name || "",
+            last_name: user_metadata?.last_name || "",
+            role: user_metadata?.role || "researcher",
+            title: user_metadata?.title || "",
+            department: user_metadata?.department || "",
+            laboratory: user_metadata?.laboratory || "",
+            phone: user_metadata?.phone || "",
+            bio: user_metadata?.bio || "",
+            is_active: true,
+          })
+          .select()
+
+        if (error) {
+          console.error("Erreur lors de la création du profil:", error)
+        } else if (data && data.length > 0) {
+          console.log("Profil créé avec succès:", data[0])
+          setProfile(data[0])
+        }
+      } catch (error) {
+        console.error("Exception lors de la création du profil:", error)
       }
     }
 

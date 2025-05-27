@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/components/auth-provider"
-import { Loader2, CheckCircle } from "lucide-react"
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
@@ -19,19 +19,24 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const [verificationSuccess, setVerificationSuccess] = useState(false)
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const verified = searchParams.get("verified") === "true"
+  const errorParam = searchParams.get("error")
+  const verifiedParam = searchParams.get("verified")
 
   useEffect(() => {
-    if (verified) {
-      setVerificationSuccess(true)
+    if (errorParam) {
+      if (errorParam === "callback_error") {
+        setError("Erreur lors de la confirmation de votre email. Veuillez réessayer ou contacter le support.")
+      } else if (errorParam === "callback_exception") {
+        setError("Une erreur technique s'est produite. Veuillez réessayer ultérieurement.")
+      }
     }
-  }, [verified])
+  }, [errorParam])
 
   useEffect(() => {
+    // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
     if (!authLoading && user) {
       router.push("/dashboard")
     }
@@ -90,7 +95,7 @@ export default function SignInPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Redirection en cours...</span>
+          <span>Redirection vers votre tableau de bord...</span>
         </div>
       </div>
     )
@@ -115,13 +120,22 @@ export default function SignInPage() {
             <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
           </CardHeader>
           <CardContent>
-            {verificationSuccess && (
+            {verifiedParam === "true" && (
               <Alert className="mb-4 bg-green-50 border-green-200">
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                   <AlertDescription className="text-green-700">
                     Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter.
                   </AlertDescription>
+                </div>
+              </Alert>
+            )}
+
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  <AlertDescription>{error}</AlertDescription>
                 </div>
               </Alert>
             )}
@@ -133,12 +147,6 @@ export default function SignInPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="space-y-2">
                   <Label htmlFor="email">Adresse email</Label>
                   <Input

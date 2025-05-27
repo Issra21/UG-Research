@@ -24,7 +24,17 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getSession()
 
   // Protéger les routes qui nécessitent une authentification
-  const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
+  const protectedRoutes = [
+    "/dashboard",
+    "/profile",
+    "/publications",
+    "/projects",
+    "/researchers",
+    "/analytics",
+    "/settings",
+    "/messages",
+    "/search",
+  ]
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié

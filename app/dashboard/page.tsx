@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase"
 import type { Publication, ResearchProject } from "@/lib/types"
 import Link from "next/link"
 import ProfileChecker from "@/components/profile-checker"
+import EnsureProfile from "@/components/ensure-profile"
 
 export default function DashboardPage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth()
@@ -160,6 +161,9 @@ export default function DashboardPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
+            {/* Ajouter le composant EnsureProfile ici */}
+            <EnsureProfile />
 
             {!profile && <ProfileChecker />}
 

@@ -5,7 +5,6 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const next = requestUrl.searchParams.get("next") ?? "/dashboard"
 
   if (code) {
     try {
@@ -15,15 +14,20 @@ export async function GET(request: NextRequest) {
       // Échanger le code contre une session
       const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-      if (!error) {
-        // Rediriger vers la page de succès de confirmation
-        return NextResponse.redirect(new URL("/auth/confirm-success", requestUrl.origin))
+      if (error) {
+        console.error("Erreur lors de l'échange du code:", error)
+        // En cas d'erreur, rediriger vers la page de connexion avec un message d'erreur
+        return NextResponse.redirect(new URL("/auth/signin?error=callback_error", requestUrl.origin))
       }
+
+      // Rediriger directement vers le tableau de bord après une confirmation réussie
+      return NextResponse.redirect(new URL("/dashboard", requestUrl.origin))
     } catch (error) {
-      console.error("Erreur lors de l'échange du code:", error)
+      console.error("Exception lors de l'échange du code:", error)
+      return NextResponse.redirect(new URL("/auth/signin?error=callback_exception", requestUrl.origin))
     }
   }
 
-  // En cas d'erreur, rediriger vers la page de confirmation avec erreur
-  return NextResponse.redirect(new URL("/auth/confirm?error=true", requestUrl.origin))
+  // Si pas de code, rediriger vers la page d'accueil
+  return NextResponse.redirect(new URL("/", requestUrl.origin))
 }
