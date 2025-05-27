@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
+import Header from "@/components/layout/header"
+import Sidebar from "@/components/layout/sidebar"
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -68,11 +70,6 @@ export default function DashboardPage() {
           first_name: user.user_metadata?.first_name || "",
           last_name: user.user_metadata?.last_name || "",
           role: user.user_metadata?.role || "researcher",
-          title: user.user_metadata?.title || "",
-          department: user.user_metadata?.department || "",
-          laboratory: user.user_metadata?.laboratory || "",
-          phone: user.user_metadata?.phone || "",
-          bio: user.user_metadata?.bio || "",
           is_active: true,
         })
         .select()
@@ -100,40 +97,6 @@ export default function DashboardPage() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-red-600">Erreur</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-            <div className="flex space-x-4">
-              <Button onClick={() => window.location.reload()} className="flex-1">
-                Réessayer
-              </Button>
-              <Button
-                onClick={async () => {
-                  if (user) {
-                    await createProfile(user)
-                    window.location.reload()
-                  }
-                }}
-                className="flex-1"
-                disabled={!user}
-              >
-                Créer mon profil
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -153,58 +116,96 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Tableau de bord</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p>
-                <strong>Bienvenue, {profile?.first_name || user.email?.split("@")[0] || "Utilisateur"} !</strong>
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-              <div className="bg-gray-100 p-4 rounded-md">
-                <h3 className="font-semibold mb-2">Informations de l'utilisateur :</h3>
-                <p>
-                  <strong>Email :</strong> {user.email}
-                </p>
-                {profile && (
-                  <>
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Tableau de bord</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p>
+                    <strong>Bienvenue, {profile?.first_name || user.email?.split("@")[0] || "Utilisateur"} !</strong>
+                  </p>
+
+                  <div className="bg-gray-100 p-4 rounded-md">
+                    <h3 className="font-semibold mb-2">Informations de l'utilisateur :</h3>
                     <p>
-                      <strong>Nom :</strong> {profile.first_name} {profile.last_name}
+                      <strong>Email :</strong> {user.email}
                     </p>
-                    <p>
-                      <strong>Rôle :</strong> {profile.role}
-                    </p>
-                    {profile.department && (
-                      <p>
-                        <strong>Département :</strong> {profile.department}
-                      </p>
+                    {profile && (
+                      <>
+                        <p>
+                          <strong>Nom :</strong> {profile.first_name} {profile.last_name}
+                        </p>
+                        <p>
+                          <strong>Rôle :</strong> {profile.role}
+                        </p>
+                        {profile.department && (
+                          <p>
+                            <strong>Département :</strong> {profile.department}
+                          </p>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
 
-              <div className="flex space-x-4">
-                <Link href="/profile">
-                  <Button>{profile ? "Modifier mon profil" : "Compléter mon profil"}</Button>
-                </Link>
+                  <div className="flex space-x-4">
+                    <Link href="/profile">
+                      <Button>{profile ? "Modifier mon profil" : "Compléter mon profil"}</Button>
+                    </Link>
 
-                <Button
-                  variant="destructive"
-                  onClick={async () => {
-                    await supabase.auth.signOut()
-                    router.push("/auth/signin")
-                  }}
-                >
-                  Se déconnecter
-                </Button>
-              </div>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        await supabase.auth.signOut()
+                        router.push("/auth/signin")
+                      }}
+                    >
+                      Se déconnecter
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mes publications récentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500">Vous n'avez pas encore de publications.</p>
+                  <Button className="mt-4" variant="outline" asChild>
+                    <Link href="/publications/new">Ajouter une publication</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mes projets de recherche</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500">Vous n'avez pas encore de projets de recherche.</p>
+                  <Button className="mt-4" variant="outline" asChild>
+                    <Link href="/projects/new">Créer un projet</Link>
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </main>
       </div>
     </div>
   )

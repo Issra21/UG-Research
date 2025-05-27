@@ -85,11 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             first_name: user_metadata?.first_name || "",
             last_name: user_metadata?.last_name || "",
             role: user_metadata?.role || "researcher",
-            title: user_metadata?.title || "",
-            department: user_metadata?.department || "",
-            laboratory: user_metadata?.laboratory || "",
-            phone: user_metadata?.phone || "",
-            bio: user_metadata?.bio || "",
             is_active: true,
           })
           .select()

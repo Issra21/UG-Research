@@ -13,5 +13,5 @@ export const getURL = () => {
 }
 
 export const getAuthCallbackURL = () => {
-  return `${getURL()}auth/confirm-success`
+  return `${getURL()}auth/callback`
 }
