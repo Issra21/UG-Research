@@ -78,26 +78,3 @@ export interface ProjectCollaborator {
   joined_at: string
   collaborator?: Profile
 }
-
-export interface Message {
-  id: string
-  sender_id: string
-  receiver_id: string
-  subject?: string
-  content: string
-  is_read: boolean
-  created_at: string
-  sender?: Profile
-  receiver?: Profile
-}
-
-export interface Notification {
-  id: string
-  user_id: string
-  title: string
-  message: string
-  type: string
-  is_read: boolean
-  action_url?: string
-  created_at: string
-}

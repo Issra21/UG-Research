@@ -1,34 +1,34 @@
 "use client"
 
-import { CardDescription } from "@/components/ui/card"
-
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { UserRole } from "@/lib/types"
-import { Mail } from "lucide-react"
+import { Mail, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export default function SignUpPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [role, setRole] = useState("researcher" as UserRole)
-  const [title, setTitle] = useState("")
-  const [department, setDepartment] = useState("")
-  const [laboratory, setLaboratory] = useState("")
-  const [phone, setPhone] = useState("")
-  const [bio, setBio] = useState("")
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    role: "researcher" as UserRole,
+    title: "",
+    department: "",
+    laboratory: "",
+    phone: "",
+    bio: "",
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -44,25 +44,18 @@ export default function SignUpPage() {
     "Institut Supérieur des Langues de Gabès",
   ]
 
-  const getRedirectUrl = () => {
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}/auth/confirm`
-    }
-    return `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm`
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
-    if (password !== confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas")
       setLoading(false)
       return
     }
 
-    if (password.length < 6) {
+    if (formData.password.length < 6) {
       setError("Le mot de passe doit contenir au moins 6 caractères")
       setLoading(false)
       return
@@ -70,19 +63,18 @@ export default function SignUpPage() {
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         options: {
-          emailRedirectTo: getRedirectUrl(),
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            role,
-            title,
-            department,
-            laboratory,
-            phone,
-            bio,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: formData.role,
+            title: formData.title,
+            department: formData.department,
+            laboratory: formData.laboratory,
+            phone: formData.phone,
+            bio: formData.bio,
           },
         },
       })
@@ -107,22 +99,15 @@ export default function SignUpPage() {
             <div className="p-4 bg-blue-50 rounded-lg">
               <Mail className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <p className="text-sm text-gray-700">
-                Un email de confirmation a été envoyé à <strong>{email}</strong>
+                Votre compte a été créé avec l&apos;email <strong>{formData.email}</strong>
               </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Cliquez sur le lien dans l&apos;email pour activer votre compte
-              </p>
+              <p className="text-xs text-gray-500 mt-2">Vous pouvez maintenant vous connecter avec vos identifiants</p>
             </div>
 
             <div className="space-y-2">
               <Button onClick={() => router.push("/auth/signin")} className="w-full">
                 Se connecter
               </Button>
-              <Link href="/auth/resend-confirmation">
-                <Button variant="outline" className="w-full">
-                  Renvoyer l&apos;email de confirmation
-                </Button>
-              </Link>
             </div>
           </CardContent>
         </Card>
@@ -161,11 +146,21 @@ export default function SignUpPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Prénom *</Label>
-                  <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Nom *</Label>
-                  <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                  />
                 </div>
               </div>
 
@@ -174,8 +169,8 @@ export default function SignUpPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="votre.email@exemple.com"
                   required
                 />
@@ -187,8 +182,8 @@ export default function SignUpPage() {
                   <Input
                     id="password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                   />
                 </div>
@@ -197,8 +192,8 @@ export default function SignUpPage() {
                   <Input
                     id="confirmPassword"
                     type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
                   />
                 </div>
@@ -207,7 +202,10 @@ export default function SignUpPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="role">Statut</Label>
-                  <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -223,8 +221,8 @@ export default function SignUpPage() {
                   <Label htmlFor="title">Titre/Grade</Label>
                   <Input
                     id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Professeur, Maître de conférences..."
                   />
                 </div>
@@ -232,7 +230,10 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="department">Département/Institut</Label>
-                <Select value={department} onValueChange={(value) => setDepartment(value)}>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionnez votre département" />
                   </SelectTrigger>
@@ -251,8 +252,8 @@ export default function SignUpPage() {
                   <Label htmlFor="laboratory">Laboratoire de recherche</Label>
                   <Input
                     id="laboratory"
-                    value={laboratory}
-                    onChange={(e) => setLaboratory(e.target.value)}
+                    value={formData.laboratory}
+                    onChange={(e) => setFormData({ ...formData, laboratory: e.target.value })}
                     placeholder="Nom du laboratoire"
                   />
                 </div>
@@ -260,8 +261,8 @@ export default function SignUpPage() {
                   <Label htmlFor="phone">Téléphone</Label>
                   <Input
                     id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+216 XX XXX XXX"
                   />
                 </div>
@@ -269,17 +270,24 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="bio">Biographie/Présentation</Label>
-                <Input
+                <Textarea
                   id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   placeholder="Présentez brièvement vos domaines de recherche et intérêts..."
                   rows={4}
                 />
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Création du compte..." : "Créer mon compte"}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Création du compte...
+                  </>
+                ) : (
+                  "Créer mon compte"
+                )}
               </Button>
             </form>
 
