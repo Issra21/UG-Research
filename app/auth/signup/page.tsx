@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { UserRole } from "@/lib/types"
 import { Mail } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase, getBaseUrl } from "@/lib/supabase"
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -63,14 +63,15 @@ export default function SignUpPage() {
     }
 
     try {
-      // Seulement créer le compte utilisateur, pas le profil
+      // Obtenir l'URL de base dynamiquement
+      const baseUrl = getBaseUrl()
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${baseUrl}/auth/confirm`,
           data: {
-            // Stocker les données du profil dans les métadonnées utilisateur
             first_name: formData.firstName,
             last_name: formData.lastName,
             role: formData.role,
@@ -106,6 +107,7 @@ export default function SignUpPage() {
                 Un email de confirmation a été envoyé à <strong>{formData.email}</strong>
               </p>
               <p className="text-xs text-gray-500 mt-2">Cliquez sur le lien dans l'email pour activer votre compte</p>
+              <p className="text-xs text-blue-600 mt-2">URL de confirmation: {getBaseUrl()}/auth/confirm</p>
             </div>
 
             <div className="space-y-2">
@@ -135,6 +137,9 @@ export default function SignUpPage() {
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Créer un compte chercheur</h2>
           <p className="mt-2 text-sm text-gray-600">Rejoignez la communauté scientifique de l'Université de Gabès</p>
+          <p className="text-xs text-blue-600 mt-1">
+            Serveur actuel: {typeof window !== "undefined" ? window.location.origin : "Chargement..."}
+          </p>
         </div>
 
         <Card>

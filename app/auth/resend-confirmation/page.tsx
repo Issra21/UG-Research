@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { supabase, getBaseUrl } from "@/lib/supabase"
 
 export default function ResendConfirmationPage() {
   const [email, setEmail] = useState("")
@@ -24,11 +24,13 @@ export default function ResendConfirmationPage() {
     setMessage("")
 
     try {
+      const baseUrl = getBaseUrl()
+
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${baseUrl}/auth/confirm`,
         },
       })
 
@@ -61,6 +63,7 @@ export default function ResendConfirmationPage() {
               <p className="text-sm text-gray-600">
                 Un nouvel email de confirmation a été envoyé à <strong>{email}</strong>
               </p>
+              <p className="text-xs text-blue-600">URL de confirmation: {getBaseUrl()}/auth/confirm</p>
               <p className="text-xs text-gray-500">
                 Vérifiez également votre dossier spam si vous ne recevez pas l'email dans les prochaines minutes.
               </p>
@@ -88,6 +91,9 @@ export default function ResendConfirmationPage() {
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Renvoyer la confirmation</h2>
           <p className="mt-2 text-sm text-gray-600">Recevez un nouvel email de confirmation</p>
+          <p className="text-xs text-blue-600 mt-1">
+            Serveur actuel: {typeof window !== "undefined" ? window.location.origin : "Chargement..."}
+          </p>
         </div>
 
         <Card>
@@ -110,7 +116,7 @@ export default function ResendConfirmationPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre.email@univ-gabes.tn"
+                  placeholder="votre.email@exemple.com"
                   required
                 />
               </div>

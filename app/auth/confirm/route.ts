@@ -8,7 +8,13 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   const next = searchParams.get("next") ?? "/auth/success"
 
-  console.log("Confirmation route called with:", { token_hash: !!token_hash, type, next })
+  console.log("Confirmation route called with:", {
+    token_hash: !!token_hash,
+    type,
+    next,
+    origin,
+    fullUrl: request.url,
+  })
 
   if (token_hash && type) {
     const supabase = createServerComponentClient()
