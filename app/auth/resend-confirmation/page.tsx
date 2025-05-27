@@ -10,13 +10,20 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react"
-import { supabase, getBaseUrl } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
 export default function ResendConfirmationPage() {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [success, setSuccess] = useState(false)
+
+  const getBaseUrl = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  }
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault()

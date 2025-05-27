@@ -14,9 +14,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { UserRole } from "@/lib/types"
 import { Mail } from "lucide-react"
-import { supabase, getBaseUrl } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
 export default function SignUpPage() {
+  const getBaseUrl = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  }
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
