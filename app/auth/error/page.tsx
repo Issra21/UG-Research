@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, ArrowLeft, Mail } from "lucide-react"
+import { AlertCircle, ArrowLeft, Mail, RefreshCw } from "lucide-react"
 
 export default function AuthErrorPage() {
   const searchParams = useSearchParams()
@@ -16,8 +16,14 @@ export default function AuthErrorPage() {
     if (error === "access_denied") {
       return "L'accès a été refusé. Veuillez vérifier votre lien de confirmation."
     }
+    if (error === "Lien de confirmation invalide") {
+      return "Le lien de confirmation est invalide ou a expiré."
+    }
     if (errorDescription) {
       return errorDescription
+    }
+    if (error) {
+      return error
     }
     return "Une erreur s'est produite lors de la confirmation de votre email."
   }
@@ -53,6 +59,7 @@ export default function AuthErrorPage() {
                   <li>Le lien de confirmation a expiré</li>
                   <li>Le lien a déjà été utilisé</li>
                   <li>Le lien est invalide ou corrompu</li>
+                  <li>Problème de configuration du serveur</li>
                 </ul>
               </div>
 
@@ -70,6 +77,11 @@ export default function AuthErrorPage() {
                     Renvoyer l'email de confirmation
                   </Button>
                 </Link>
+
+                <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réessayer
+                </Button>
               </div>
             </div>
           </CardContent>

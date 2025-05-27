@@ -119,6 +119,9 @@ export default function CompleteProfilePage() {
             Quelques informations supplémentaires pour finaliser votre compte
           </p>
           <p className="text-xs text-gray-500 mt-1">Email: {user.email}</p>
+          <p className="text-xs text-blue-600 mt-1">
+            Ouvert à tous les chercheurs et étudiants intéressés par la recherche
+          </p>
         </div>
 
         <Card>

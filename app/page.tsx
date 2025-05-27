@@ -69,13 +69,13 @@ export default function HomePage() {
             <span className="block text-blue-600">Université de Gabès</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Centralisez, valorisez et mettez en réseau les enseignants-chercheurs de l'Université de Gabès. Favorisez la
-            collaboration scientifique et la visibilité de vos travaux de recherche.
+            Centralisez, valorisez et mettez en réseau les chercheurs et étudiants. Favorisez la collaboration
+            scientifique et la visibilité de vos travaux de recherche.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/signup">
               <Button size="lg" className="w-full sm:w-auto">
-                Créer un compte chercheur
+                Créer un compte
               </Button>
             </Link>
             <Link href="/researchers">

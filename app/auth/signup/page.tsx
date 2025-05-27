@@ -161,13 +161,13 @@ export default function SignUpPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email universitaire *</Label>
+                <Label htmlFor="email">Adresse email *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="votre.email@univ-gabes.tn"
+                  placeholder="votre.email@exemple.com"
                   required
                 />
               </div>

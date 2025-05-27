@@ -131,13 +131,13 @@ export default function SignInPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email universitaire</Label>
+                <Label htmlFor="email">Adresse email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre.email@univ-gabes.tn"
+                  placeholder="votre.email@exemple.com"
                   required
                   disabled={loading}
                 />
