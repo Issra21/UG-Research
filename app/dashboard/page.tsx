@@ -2,112 +2,122 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Users, BookOpen, Briefcase, TrendingUp, Plus, MessageSquare, Eye, Loader2, RefreshCw } from "lucide-react"
-import Header from "@/components/layout/header"
-import Sidebar from "@/components/layout/sidebar"
-import { useAuth } from "@/components/auth-provider"
+import { Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import type { Publication, ResearchProject } from "@/lib/types"
 import Link from "next/link"
-import ProfileChecker from "@/components/profile-checker"
-import EnsureProfile from "@/components/ensure-profile"
 
 export default function DashboardPage() {
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth()
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [stats, setStats] = useState({
-    publications: 0,
-    projects: 0,
-    collaborations: 0,
-    citations: 0,
-  })
-  const [recentPublications, setRecentPublications] = useState<Publication[]>([])
-  const [activeProjects, setActiveProjects] = useState<ResearchProject[]>([])
   const router = useRouter()
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        console.log("Pas d'utilisateur, redirection vers la connexion")
-        router.push("/auth/signin")
-        return
+    const checkAuth = async () => {
+      try {
+        setLoading(true)
+
+        // Vérifier la session
+        const { data: sessionData } = await supabase.auth.getSession()
+
+        if (!sessionData.session) {
+          router.push("/auth/signin")
+          return
+        }
+
+        setUser(sessionData.session.user)
+
+        // Vérifier le profil
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", sessionData.session.user.id)
+          .single()
+
+        if (!error) {
+          setProfile(profileData)
+        } else if (error.code === "PGRST116") {
+          // Profil non trouvé, essayer de le créer
+          await createProfile(sessionData.session.user)
+        } else {
+          console.error("Erreur lors de la récupération du profil:", error)
+          setError("Erreur lors du chargement de votre profil")
+        }
+      } catch (error: any) {
+        console.error("Erreur lors de la vérification de l'authentification:", error)
+        setError(error.message || "Une erreur s'est produite")
+      } finally {
+        setLoading(false)
       }
-
-      console.log("Utilisateur connecté:", user.id)
-      console.log("Profil:", profile ? "Disponible" : "Non disponible")
-
-      loadDashboardData()
     }
-  }, [user, authLoading, router])
 
-  const loadDashboardData = async () => {
-    if (!user) return
+    checkAuth()
+  }, [router])
 
+  const createProfile = async (user: any) => {
     try {
-      setLoading(true)
-      console.log("Chargement des données du tableau de bord pour:", user.id)
+      const response = await fetch("/api/create-profile", {
+        method: "POST",
+      })
 
-      const [publicationsRes, projectsRes] = await Promise.all([
-        supabase
-          .from("publications")
-          .select("*")
-          .eq("author_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        supabase
-          .from("research_projects")
-          .select("*")
-          .eq("principal_investigator_id", user.id)
-          .eq("status", "active")
-          .limit(3),
-      ])
+      const data = await response.json()
 
-      if (publicationsRes.error) {
-        console.error("Erreur lors du chargement des publications:", publicationsRes.error)
+      if (data.success) {
+        setProfile(data.profile)
       } else {
-        console.log(`${publicationsRes.data?.length || 0} publications chargées`)
-        setRecentPublications(publicationsRes.data || [])
-        setStats((prev) => ({ ...prev, publications: publicationsRes.data?.length || 0 }))
+        setError("Erreur lors de la création de votre profil")
       }
-
-      if (projectsRes.error) {
-        console.error("Erreur lors du chargement des projets:", projectsRes.error)
-      } else {
-        console.log(`${projectsRes.data?.length || 0} projets chargés`)
-        setActiveProjects(projectsRes.data || [])
-        setStats((prev) => ({ ...prev, projects: projectsRes.data?.length || 0 }))
-      }
-    } catch (error: any) {
-      console.error("Exception lors du chargement des données:", error)
-      setError(error.message || "Erreur lors du chargement des données")
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      console.error("Erreur lors de la création du profil:", error)
+      setError("Erreur lors de la création de votre profil")
     }
   }
 
-  const handleRefreshProfile = async () => {
-    await refreshProfile()
-  }
-
-  if (authLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-          <p className="text-lg">Vérification de l'authentification...</p>
+          <p className="text-lg">Chargement de votre tableau de bord...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-red-600">Erreur</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <div className="flex space-x-4">
+              <Button onClick={() => window.location.reload()} className="flex-1">
+                Réessayer
+              </Button>
+              <Link href="/debug-auth">
+                <Button variant="outline" className="flex-1">
+                  Déboguer l'authentification
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle>Non connecté</CardTitle>
@@ -124,264 +134,62 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-8 flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Bonjour, {profile?.first_name || user.email?.split("@")[0] || "Utilisateur"}
-                </h1>
-                <p className="text-gray-600">Bienvenue sur votre tableau de bord UG-Research</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Tableau de bord</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p>
+                <strong>Bienvenue, {profile?.first_name || user.email?.split("@")[0] || "Utilisateur"} !</strong>
+              </p>
+
+              <div className="bg-gray-100 p-4 rounded-md">
+                <h3 className="font-semibold mb-2">Informations de l'utilisateur :</h3>
+                <p>
+                  <strong>Email :</strong> {user.email}
+                </p>
                 {profile && (
-                  <div className="mt-2">
-                    <Badge variant="secondary">{profile.department || "Département non renseigné"}</Badge>
-                    {profile.laboratory && (
-                      <Badge variant="outline" className="ml-2">
-                        {profile.laboratory}
-                      </Badge>
+                  <>
+                    <p>
+                      <strong>Nom :</strong> {profile.first_name} {profile.last_name}
+                    </p>
+                    <p>
+                      <strong>Rôle :</strong> {profile.role}
+                    </p>
+                    {profile.department && (
+                      <p>
+                        <strong>Département :</strong> {profile.department}
+                      </p>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
 
-              {!profile && (
-                <Button onClick={handleRefreshProfile} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Rafraîchir le profil
+              <div className="flex space-x-4">
+                <Link href="/profile">
+                  <Button>{profile ? "Modifier mon profil" : "Compléter mon profil"}</Button>
+                </Link>
+
+                <Link href="/debug-auth">
+                  <Button variant="outline">Déboguer l'authentification</Button>
+                </Link>
+
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    router.push("/auth/signin")
+                  }}
+                >
+                  Se déconnecter
                 </Button>
-              )}
-            </div>
-
-            {error && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Ajouter le composant EnsureProfile ici */}
-            <EnsureProfile />
-
-            {!profile && <ProfileChecker />}
-
-            {!profile && (
-              <Alert className="mb-6">
-                <AlertDescription>
-                  Votre profil n'est pas complètement chargé. Certaines fonctionnalités peuvent être limitées.{" "}
-                  <Link href="/profile" className="font-medium underline">
-                    Compléter votre profil
-                  </Link>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Publications</CardTitle>
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.publications}</div>
-                  <p className="text-xs text-muted-foreground">Total publié</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Projets actifs</CardTitle>
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.projects}</div>
-                  <p className="text-xs text-muted-foreground">En cours</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Collaborations</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.collaborations}</div>
-                  <p className="text-xs text-muted-foreground">Chercheurs connectés</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Citations</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.citations}</div>
-                  <p className="text-xs text-muted-foreground">Impact total</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="flex flex-col items-center space-y-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  <p>Chargement des données...</p>
-                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <CardTitle>Publications récentes</CardTitle>
-                        <CardDescription>Vos dernières publications scientifiques</CardDescription>
-                      </div>
-                      <Link href="/publications/new">
-                        <Button size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ajouter
-                        </Button>
-                      </Link>
-                    </CardHeader>
-                    <CardContent>
-                      {recentPublications.length > 0 ? (
-                        <div className="space-y-4">
-                          {recentPublications.map((publication) => (
-                            <div key={publication.id} className="flex items-start space-x-4 p-4 border rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm mb-1">{publication.title}</h4>
-                                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                  <Badge variant="secondary">{publication.publication_type}</Badge>
-                                  <span>{publication.publication_date}</span>
-                                  {publication.journal_name && <span>• {publication.journal_name}</span>}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                <Eye className="h-3 w-3" />
-                                <span>{publication.citation_count}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-500 mb-4">Aucune publication pour le moment</p>
-                          <Link href="/publications/new">
-                            <Button>Ajouter votre première publication</Button>
-                          </Link>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Actions rapides</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Link href="/publications/new">
-                        <Button variant="outline" className="w-full justify-start">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nouvelle publication
-                        </Button>
-                      </Link>
-                      <Link href="/projects/new">
-                        <Button variant="outline" className="w-full justify-start">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nouveau projet
-                        </Button>
-                      </Link>
-                      <Link href="/researchers">
-                        <Button variant="outline" className="w-full justify-start">
-                          <Users className="h-4 w-4 mr-2" />
-                          Trouver des collaborateurs
-                        </Button>
-                      </Link>
-                      <Link href="/profile">
-                        <Button variant="outline" className="w-full justify-start">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Mon profil
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Projets actifs</CardTitle>
-                      <CardDescription>Vos projets de recherche en cours</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {activeProjects.length > 0 ? (
-                        <div className="space-y-3">
-                          {activeProjects.map((project) => (
-                            <div key={project.id} className="p-3 border rounded-lg">
-                              <h4 className="font-medium text-sm mb-1">{project.title}</h4>
-                              <div className="flex items-center justify-between text-xs text-gray-500">
-                                <Badge variant="outline">{project.status}</Badge>
-                                <span>{project.start_date}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <Briefcase className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500 mb-3">Aucun projet actif</p>
-                          <Link href="/projects/new">
-                            <Button size="sm">Créer un projet</Button>
-                          </Link>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Informations du compte</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 text-sm">
-                        <p>
-                          <strong>Email:</strong> {user.email}
-                        </p>
-                        {profile ? (
-                          <>
-                            <p>
-                              <strong>Nom:</strong> {profile.first_name} {profile.last_name}
-                            </p>
-                            <p>
-                              <strong>Rôle:</strong> {profile.role}
-                            </p>
-                            {profile.department && (
-                              <p>
-                                <strong>Département:</strong> {profile.department}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-amber-600">
-                            Profil non chargé.{" "}
-                            <Link href="/profile" className="underline">
-                              Compléter votre profil
-                            </Link>
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

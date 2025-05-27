@@ -24,23 +24,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getSession()
 
   // Protéger les routes qui nécessitent une authentification
-  const protectedRoutes = [
-    "/dashboard",
-    "/profile",
-    "/publications",
-    "/projects",
-    "/researchers",
-    "/analytics",
-    "/settings",
-    "/messages",
-    "/search",
-  ]
+  const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié
   if (isProtectedRoute && !session) {
     const redirectUrl = new URL("/auth/signin", request.url)
-    redirectUrl.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(redirectUrl)
   }
 

@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/components/auth-provider"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function SignInPage() {
@@ -19,7 +18,6 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const errorParam = searchParams.get("error")
@@ -35,12 +33,17 @@ export default function SignInPage() {
     }
   }, [errorParam])
 
+  // Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
-    // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
-    if (!authLoading && user) {
-      router.push("/dashboard")
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        router.push("/dashboard")
+      }
     }
-  }, [user, authLoading, router])
+
+    checkSession()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,9 +65,23 @@ export default function SignInPage() {
       console.log("Connexion réussie:", data.user?.id)
       setSuccess(true)
 
-      // Redirection après un court délai pour permettre à la session d'être établie
-      setTimeout(() => {
-        router.push("/dashboard")
+      // Attendre un peu pour que la session soit bien établie
+      setTimeout(async () => {
+        try {
+          // Vérifier si le profil existe et le créer si nécessaire
+          await fetch("/api/ensure-profile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+
+          // Rediriger vers le tableau de bord
+          router.push("/dashboard")
+        } catch (err) {
+          console.error("Erreur lors de la vérification du profil:", err)
+          router.push("/dashboard")
+        }
       }, 1000)
     } catch (error: any) {
       if (error.message.includes("Invalid login credentials")) {
@@ -74,31 +91,8 @@ export default function SignInPage() {
       } else {
         setError(error.message || "Erreur de connexion")
       }
-    } finally {
       setLoading(false)
     }
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Vérification de l&apos;authentification...</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Redirection vers votre tableau de bord...</span>
-        </div>
-      </div>
-    )
   }
 
   return (
