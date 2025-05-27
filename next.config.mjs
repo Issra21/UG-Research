@@ -9,6 +9,26 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '*.vercel.app']
+    }
+  },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/dashboard',
+        permanent: false,
+        has: [
+          {
+            type: 'cookie',
+            key: 'sb-*-auth-token'
+          }
+        ]
+      }
+    ]
+  }
 }
 
 export default nextConfig

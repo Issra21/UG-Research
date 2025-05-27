@@ -12,18 +12,8 @@ export async function signUp(email: string, password: string, profileData: Parti
 
   if (error) throw error
 
-  if (data.user) {
-    // Create profile
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
-        id: data.user.id,
-        email,
-        ...profileData,
-      },
-    ])
-
-    if (profileError) throw profileError
-  }
+  // Ne pas créer le profil ici - il sera créé après la confirmation email
+  // dans la page complete-profile ou via un trigger de base de données
 
   return data
 }

@@ -12,9 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { signUp } from "@/lib/auth"
 import type { UserRole } from "@/lib/types"
 import { Mail } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -63,16 +63,27 @@ export default function SignUpPage() {
     }
 
     try {
-      await signUp(formData.email, formData.password, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        role: formData.role,
-        title: formData.title,
-        department: formData.department,
-        laboratory: formData.laboratory,
-        phone: formData.phone,
-        bio: formData.bio,
+      // Seulement créer le compte utilisateur, pas le profil
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          data: {
+            // Stocker les données du profil dans les métadonnées utilisateur
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: formData.role,
+            title: formData.title,
+            department: formData.department,
+            laboratory: formData.laboratory,
+            phone: formData.phone,
+            bio: formData.bio,
+          },
+        },
       })
+
+      if (error) throw error
       setSuccess(true)
     } catch (error: any) {
       setError(error.message || "Erreur lors de la création du compte")
