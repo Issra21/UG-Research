@@ -60,16 +60,28 @@ export default function DashboardPage() {
 
   const createProfile = async (user: any) => {
     try {
-      const response = await fetch("/api/create-profile", {
-        method: "POST",
-      })
+      const { data, error } = await supabase
+        .from("profiles")
+        .insert({
+          id: user.id,
+          email: user.email || "",
+          first_name: user.user_metadata?.first_name || "",
+          last_name: user.user_metadata?.last_name || "",
+          role: user.user_metadata?.role || "researcher",
+          title: user.user_metadata?.title || "",
+          department: user.user_metadata?.department || "",
+          laboratory: user.user_metadata?.laboratory || "",
+          phone: user.user_metadata?.phone || "",
+          bio: user.user_metadata?.bio || "",
+          is_active: true,
+        })
+        .select()
 
-      const data = await response.json()
-
-      if (data.success) {
-        setProfile(data.profile)
-      } else {
+      if (error) {
+        console.error("Erreur lors de la création du profil:", error)
         setError("Erreur lors de la création de votre profil")
+      } else if (data && data.length > 0) {
+        setProfile(data[0])
       }
     } catch (error) {
       console.error("Erreur lors de la création du profil:", error)
@@ -103,11 +115,18 @@ export default function DashboardPage() {
               <Button onClick={() => window.location.reload()} className="flex-1">
                 Réessayer
               </Button>
-              <Link href="/debug-auth">
-                <Button variant="outline" className="flex-1">
-                  Déboguer l'authentification
-                </Button>
-              </Link>
+              <Button
+                onClick={async () => {
+                  if (user) {
+                    await createProfile(user)
+                    window.location.reload()
+                  }
+                }}
+                className="flex-1"
+                disabled={!user}
+              >
+                Créer mon profil
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -171,10 +190,6 @@ export default function DashboardPage() {
               <div className="flex space-x-4">
                 <Link href="/profile">
                   <Button>{profile ? "Modifier mon profil" : "Compléter mon profil"}</Button>
-                </Link>
-
-                <Link href="/debug-auth">
-                  <Button variant="outline">Déboguer l'authentification</Button>
                 </Link>
 
                 <Button

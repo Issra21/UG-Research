@@ -23,16 +23,6 @@ export default function SignInPage() {
   const errorParam = searchParams.get("error")
   const verifiedParam = searchParams.get("verified")
 
-  useEffect(() => {
-    if (errorParam) {
-      if (errorParam === "callback_error") {
-        setError("Erreur lors de la confirmation de votre email. Veuillez réessayer ou contacter le support.")
-      } else if (errorParam === "callback_exception") {
-        setError("Une erreur technique s'est produite. Veuillez réessayer ultérieurement.")
-      }
-    }
-  }, [errorParam])
-
   // Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
     const checkSession = async () => {
@@ -44,6 +34,18 @@ export default function SignInPage() {
 
     checkSession()
   }, [router])
+
+  useEffect(() => {
+    if (errorParam) {
+      if (errorParam === "callback_error") {
+        setError("Erreur lors de la confirmation de votre email. Veuillez réessayer ou contacter le support.")
+      } else if (errorParam === "callback_exception") {
+        setError("Une erreur technique s'est produite. Veuillez réessayer ultérieurement.")
+      } else {
+        setError(decodeURIComponent(errorParam))
+      }
+    }
+  }, [errorParam])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,32 +67,19 @@ export default function SignInPage() {
       console.log("Connexion réussie:", data.user?.id)
       setSuccess(true)
 
-      // Attendre un peu pour que la session soit bien établie
-      setTimeout(async () => {
-        try {
-          // Vérifier si le profil existe et le créer si nécessaire
-          await fetch("/api/ensure-profile", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
-
-          // Rediriger vers le tableau de bord
-          router.push("/dashboard")
-        } catch (err) {
-          console.error("Erreur lors de la vérification du profil:", err)
-          router.push("/dashboard")
-        }
+      // Redirection après un court délai pour permettre à la session d'être établie
+      setTimeout(() => {
+        router.push("/dashboard")
       }, 1000)
     } catch (error: any) {
       if (error.message.includes("Invalid login credentials")) {
         setError("Email ou mot de passe incorrect")
       } else if (error.message.includes("Email not confirmed")) {
-        setError("Veuillez confirmer votre email avant de vous connecter")
+        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
       } else {
         setError(error.message || "Erreur de connexion")
       }
+    } finally {
       setLoading(false)
     }
   }
@@ -132,6 +121,14 @@ export default function SignInPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </div>
               </Alert>
+            )}
+
+            {error && error.includes("confirmer votre email") && (
+              <div className="mt-2 text-center">
+                <Link href="/auth/resend-confirmation" className="text-sm text-blue-600 hover:underline">
+                  Renvoyer l'email de confirmation
+                </Link>
+              </div>
             )}
 
             {success ? (
