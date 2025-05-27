@@ -18,11 +18,11 @@ export default function ResendConfirmationPage() {
   const [message, setMessage] = useState("")
   const [success, setSuccess] = useState(false)
 
-  const getBaseUrl = () => {
+  const getRedirectUrl = () => {
     if (typeof window !== "undefined") {
-      return window.location.origin
+      return `${window.location.origin}/auth/confirm`
     }
-    return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+    return `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm`
   }
 
   const handleResend = async (e: React.FormEvent) => {
@@ -31,13 +31,11 @@ export default function ResendConfirmationPage() {
     setMessage("")
 
     try {
-      const baseUrl = getBaseUrl()
-
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email,
         options: {
-          emailRedirectTo: `${baseUrl}/auth/confirm`,
+          emailRedirectTo: getRedirectUrl(),
         },
       })
 
@@ -70,9 +68,8 @@ export default function ResendConfirmationPage() {
               <p className="text-sm text-gray-600">
                 Un nouvel email de confirmation a été envoyé à <strong>{email}</strong>
               </p>
-              <p className="text-xs text-blue-600">URL de confirmation: {getBaseUrl()}/auth/confirm</p>
               <p className="text-xs text-gray-500">
-                Vérifiez également votre dossier spam si vous ne recevez pas l'email dans les prochaines minutes.
+                Vérifiez également votre dossier spam si vous ne recevez pas l&apos;email dans les prochaines minutes.
               </p>
               <Link href="/auth/signin">
                 <Button className="w-full">
@@ -98,14 +95,11 @@ export default function ResendConfirmationPage() {
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Renvoyer la confirmation</h2>
           <p className="mt-2 text-sm text-gray-600">Recevez un nouvel email de confirmation</p>
-          <p className="text-xs text-blue-600 mt-1">
-            Serveur actuel: {typeof window !== "undefined" ? window.location.origin : "Chargement..."}
-          </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Renvoyer l'email de confirmation</CardTitle>
+            <CardTitle>Renvoyer l&apos;email de confirmation</CardTitle>
             <CardDescription>Entrez votre adresse email pour recevoir un nouveau lien</CardDescription>
           </CardHeader>
           <CardContent>

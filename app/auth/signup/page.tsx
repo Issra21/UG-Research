@@ -17,13 +17,6 @@ import { Mail } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export default function SignUpPage() {
-  const getBaseUrl = () => {
-    if (typeof window !== "undefined") {
-      return window.location.origin
-    }
-    return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-  }
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -52,6 +45,13 @@ export default function SignUpPage() {
     "Institut Supérieur des Langues de Gabès",
   ]
 
+  const getRedirectUrl = () => {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/auth/confirm`
+    }
+    return `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -70,14 +70,11 @@ export default function SignUpPage() {
     }
 
     try {
-      // Obtenir l'URL de base dynamiquement
-      const baseUrl = getBaseUrl()
-
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${baseUrl}/auth/confirm`,
+          emailRedirectTo: getRedirectUrl(),
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -113,8 +110,9 @@ export default function SignUpPage() {
               <p className="text-sm text-gray-700">
                 Un email de confirmation a été envoyé à <strong>{formData.email}</strong>
               </p>
-              <p className="text-xs text-gray-500 mt-2">Cliquez sur le lien dans l'email pour activer votre compte</p>
-              <p className="text-xs text-blue-600 mt-2">URL de confirmation: {getBaseUrl()}/auth/confirm</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Cliquez sur le lien dans l&apos;email pour activer votre compte
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -123,7 +121,7 @@ export default function SignUpPage() {
               </Button>
               <Link href="/auth/resend-confirmation">
                 <Button variant="outline" className="w-full">
-                  Renvoyer l'email de confirmation
+                  Renvoyer l&apos;email de confirmation
                 </Button>
               </Link>
             </div>
@@ -143,9 +141,8 @@ export default function SignUpPage() {
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Créer un compte chercheur</h2>
-          <p className="mt-2 text-sm text-gray-600">Rejoignez la communauté scientifique de l'Université de Gabès</p>
-          <p className="text-xs text-blue-600 mt-1">
-            Serveur actuel: {typeof window !== "undefined" ? window.location.origin : "Chargement..."}
+          <p className="mt-2 text-sm text-gray-600">
+            Rejoignez la communauté scientifique de l&apos;Université de Gabès
           </p>
         </div>
 

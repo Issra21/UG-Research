@@ -54,7 +54,7 @@ export default function HomePage() {
                 <Button variant="ghost">Se connecter</Button>
               </Link>
               <Link href="/auth/signup">
-                <Button>S'inscrire</Button>
+                <Button>S&apos;inscrire</Button>
               </Link>
             </div>
           </div>
@@ -150,7 +150,9 @@ export default function HomePage() {
                 </div>
                 <span className="text-xl font-bold">UG-Research</span>
               </div>
-              <p className="text-gray-400">Plateforme officielle de gestion des chercheurs de l'Université de Gabès</p>
+              <p className="text-gray-400">
+                Plateforme officielle de gestion des chercheurs de l&apos;Université de Gabès
+              </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Liens utiles</h3>
