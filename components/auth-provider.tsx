@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { User, Session } from "@supabase/supabase-js"
 import type { Profile } from "@/lib/types"
@@ -38,38 +39,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session:", session?.user?.email)
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadProfile(session.user.id)
-      } else {
-        setLoading(false)
+    const getInitialSession = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error("Error getting session:", error)
+          if (mounted) {
+            setLoading(false)
+          }
+          return
+        }
+
+        console.log("Initial session:", session?.user?.email)
+
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+
+          if (session?.user) {
+            await loadProfile(session.user.id)
+          } else {
+            setLoading(false)
+          }
+        }
+      } catch (error) {
+        console.error("Error in getInitialSession:", error)
+        if (mounted) {
+          setLoading(false)
+        }
       }
-    })
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session?.user?.email)
+
+      if (!mounted) return
+
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
         await loadProfile(session.user.id)
+
+        // Redirect to dashboard after successful authentication
+        if (event === "SIGNED_IN" && typeof window !== "undefined") {
+          const currentPath = window.location.pathname
+          if (currentPath.startsWith("/auth/")) {
+            router.push("/dashboard")
+          }
+        }
       } else {
         setProfile(null)
         setLoading(false)
+
+        // Redirect to signin if signed out
+        if (event === "SIGNED_OUT" && typeof window !== "undefined") {
+          const currentPath = window.location.pathname
+          const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
+          if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
+            router.push("/auth/signin")
+          }
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [router])
 
   const loadProfile = async (userId: string) => {
     try {
@@ -79,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error("Profile error:", error)
-        // If profile doesn't exist (PGRST116), that's ok - user needs to create one
         if (error.code === "PGRST116") {
           console.log("Profile not found - user needs to create one")
           setProfile(null)
@@ -100,12 +152,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
+      setLoading(true)
       await loadProfile(user.id)
     }
   }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   const value = {
