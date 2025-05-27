@@ -5,14 +5,25 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
+  const next = requestUrl.searchParams.get("next") ?? "/dashboard"
 
   if (code) {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    try {
+      const cookieStore = cookies()
+      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    await supabase.auth.exchangeCodeForSession(code)
+      // Échanger le code contre une session
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+      if (!error) {
+        // Rediriger vers la page de succès de confirmation
+        return NextResponse.redirect(new URL("/auth/confirm-success", requestUrl.origin))
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'échange du code:", error)
+    }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL("/auth/confirm", requestUrl.origin))
+  // En cas d'erreur, rediriger vers la page de confirmation avec erreur
+  return NextResponse.redirect(new URL("/auth/confirm?error=true", requestUrl.origin))
 }
