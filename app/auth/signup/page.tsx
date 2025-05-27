@@ -86,33 +86,6 @@ export default function SignUpPage() {
 
       if (error) throw error
 
-      // Créer manuellement le profil pour éviter les problèmes avec le trigger
-      if (data.user) {
-        try {
-          const { error: profileError } = await supabase.from("profiles").insert({
-            id: data.user.id,
-            email: formData.email,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            role: formData.role,
-            title: formData.title,
-            department: formData.department,
-            laboratory: formData.laboratory,
-            phone: formData.phone,
-            bio: formData.bio,
-            is_active: true,
-          })
-
-          if (profileError) {
-            console.error("Erreur lors de la création du profil:", profileError)
-          } else {
-            console.log("Profil créé avec succès pour:", data.user.id)
-          }
-        } catch (profileErr) {
-          console.error("Exception lors de la création du profil:", profileErr)
-        }
-      }
-
       setSuccess(true)
     } catch (error: any) {
       console.error("Erreur d'inscription:", error)

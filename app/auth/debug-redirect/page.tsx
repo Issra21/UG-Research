@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { getAuthCallbackURL } from "@/lib/supabase-config"
 
 export default function DebugRedirectPage() {
   const [siteUrl, setSiteUrl] = useState<string>("")
@@ -14,14 +15,7 @@ export default function DebugRedirectPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCurrentUrl(window.location.origin)
-
-      // Construire l'URL de callback comme le ferait l'application
-      const url = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_VERCEL_URL || window.location.origin
-
-      const baseUrl = url.includes("http") ? url : `https://${url}`
-      const normalizedUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`
-
-      setCallbackUrl(`${normalizedUrl}auth/callback`)
+      setCallbackUrl(getAuthCallbackURL())
       setSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || "Non défini")
       setVercelUrl(process.env.NEXT_PUBLIC_VERCEL_URL || "Non défini")
     }
@@ -66,8 +60,10 @@ export default function DebugRedirectPage() {
                 <p className="text-sm text-gray-600 mb-2">
                   Pour tester la redirection, cliquez sur le bouton ci-dessous:
                 </p>
-                <Button onClick={() => (window.location.href = "/auth/callback?code=test_code")}>
-                  Tester la redirection de callback
+                <Button
+                  onClick={() => (window.location.href = "/auth/confirm-success?token_hash=test_token&type=signup")}
+                >
+                  Tester la redirection de confirmation
                 </Button>
               </div>
             </div>
