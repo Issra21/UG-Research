@@ -44,6 +44,14 @@ export default function SignUpPage() {
     "Institut Supérieur des Langues de Gabès",
   ]
 
+  const getRedirectUrl = () => {
+    // URL simple et directe
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/auth/verify`
+    }
+    return `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/verify`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -62,11 +70,14 @@ export default function SignUpPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log("Tentative d'inscription avec redirection vers:", getRedirectUrl())
+
+      // Créer d'abord le compte
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getRedirectUrl(),
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -81,8 +92,37 @@ export default function SignUpPage() {
       })
 
       if (error) throw error
+
+      // Créer manuellement le profil pour éviter les problèmes avec le trigger
+      if (data.user) {
+        try {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            id: data.user.id,
+            email: formData.email,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: formData.role,
+            title: formData.title,
+            department: formData.department,
+            laboratory: formData.laboratory,
+            phone: formData.phone,
+            bio: formData.bio,
+            is_active: true,
+          })
+
+          if (profileError) {
+            console.error("Erreur lors de la création du profil:", profileError)
+          } else {
+            console.log("Profil créé avec succès pour:", data.user.id)
+          }
+        } catch (profileErr) {
+          console.error("Exception lors de la création du profil:", profileErr)
+        }
+      }
+
       setSuccess(true)
     } catch (error: any) {
+      console.error("Erreur d'inscription:", error)
       setError(error.message || "Erreur lors de la création du compte")
     } finally {
       setLoading(false)
@@ -100,14 +140,16 @@ export default function SignUpPage() {
             <div className="p-4 bg-blue-50 rounded-lg">
               <Mail className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <p className="text-sm text-gray-700">
-                Votre compte a été créé avec l&apos;email <strong>{formData.email}</strong>
+                Un email de confirmation a été envoyé à <strong>{formData.email}</strong>
               </p>
-              <p className="text-xs text-gray-500 mt-2">Vous pouvez maintenant vous connecter avec vos identifiants</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Veuillez cliquer sur le lien dans l'email pour activer votre compte
+              </p>
             </div>
 
             <div className="space-y-2">
               <Button onClick={() => router.push("/auth/signin")} className="w-full">
-                Se connecter
+                Aller à la page de connexion
               </Button>
             </div>
           </CardContent>
@@ -116,6 +158,7 @@ export default function SignUpPage() {
     )
   }
 
+  // Reste du code inchangé...
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl w-full space-y-8">

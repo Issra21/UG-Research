@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
-import { Loader2 } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+import { Loader2, CheckCircle } from "lucide-react"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
@@ -18,7 +19,23 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [verificationSuccess, setVerificationSuccess] = useState(false)
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const verified = searchParams.get("verified") === "true"
+
+  useEffect(() => {
+    if (verified) {
+      setVerificationSuccess(true)
+    }
+  }, [verified])
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard")
+    }
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,6 +74,28 @@ export default function SignInPage() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Vérification de l&apos;authentification...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Redirection en cours...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -76,6 +115,17 @@ export default function SignInPage() {
             <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
           </CardHeader>
           <CardContent>
+            {verificationSuccess && (
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <AlertDescription className="text-green-700">
+                    Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
+
             {success ? (
               <div className="text-center py-4">
                 <Loader2 className="h-8 w-8 text-blue-600 mx-auto animate-spin" />
