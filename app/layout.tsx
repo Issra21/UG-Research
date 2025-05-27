@@ -1,15 +1,13 @@
 import type React from "react"
-import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { AuthProvider } from "@/components/auth-provider"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata: Metadata = {
-  title: "UG-Research - Plateforme de gestion des chercheurs",
-  description:
-    "Plateforme de gestion, valorisation et mise en réseau des enseignants-chercheurs de l'Université de Gabès",
+export const metadata = {
+  title: "UG-Research",
+  description: "Plateforme de recherche",
     generator: 'v0.dev'
 }
 

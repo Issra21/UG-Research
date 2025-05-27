@@ -1,8 +1,10 @@
 "use client"
 
+import { CardDescription } from "@/components/ui/card"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -25,7 +27,7 @@ import type { Publication, ResearchProject } from "@/lib/types"
 import Link from "next/link"
 
 export default function DashboardPage() {
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, signOut } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     publications: 0,
@@ -110,19 +112,9 @@ export default function DashboardPage() {
         <Sidebar />
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Bonjour, {profile.first_name} {profile.last_name}
-              </h1>
-              <p className="text-gray-600">Bienvenue sur votre tableau de bord UG-Research</p>
-              <div className="mt-2">
-                <Badge variant="secondary">{profile.department}</Badge>
-                {profile.laboratory && (
-                  <Badge variant="outline" className="ml-2">
-                    {profile.laboratory}
-                  </Badge>
-                )}
-              </div>
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-3xl font-bold">Tableau de bord</h1>
+              <Button onClick={signOut}>Déconnexion</Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -307,6 +299,20 @@ export default function DashboardPage() {
                 </Card>
               </div>
             </div>
+
+            {profile && (
+              <Card className="mt-8">
+                <CardHeader>
+                  <CardTitle>Profil</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Email: {user.email}</p>
+                  <p>
+                    Nom: {profile.first_name} {profile.last_name}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>
