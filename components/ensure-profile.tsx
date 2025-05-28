@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from 'lucide-react'
 
 export default function EnsureProfile() {
   const { user, profile, refreshProfile } = useAuth()

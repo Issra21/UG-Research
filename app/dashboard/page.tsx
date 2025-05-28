@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Loader2, User, Mail, Building, GraduationCap } from "lucide-react"
 import EnsureProfile from "@/components/ensure-profile"
-
+import EnsureProfile from "@/components/ensure-profile"
 export default function DashboardPage() {
   const { user, profile, loading, signOut } = useAuth()
   const router = useRouter()
