@@ -16,7 +16,7 @@ import { Mail, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getAuthCallbackURL } from "@/lib/supabase-config"
 
-export default function SignUpPage() {
+export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -65,7 +65,7 @@ export default function SignUpPage() {
     try {
       console.log("Tentative d'inscription avec redirection vers:", getAuthCallbackURL())
 
-      // Créer d'abord le compte
+      // Créer le compte avec Supabase
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -114,7 +114,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Button onClick={() => router.push("/auth/signin")} className="w-full">
+              <Button onClick={() => router.push("/login")} className="w-full">
                 Aller à la page de connexion
               </Button>
             </div>
@@ -303,7 +303,7 @@ export default function SignUpPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Déjà un compte ?{" "}
-                <Link href="/auth/signin" className="text-blue-600 hover:text-blue-500">
+                <Link href="/login" className="text-blue-600 hover:text-blue-500">
                   Se connecter
                 </Link>
               </p>

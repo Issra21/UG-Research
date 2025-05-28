@@ -11,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
 
-export default function SignInPage() {
+export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -20,32 +21,27 @@ export default function SignInPage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user } = useAuth()
+
   const errorParam = searchParams.get("error")
+  const registeredParam = searchParams.get("registered")
   const verifiedParam = searchParams.get("verified")
 
-  // Vérifier si l'utilisateur est déjà connecté
+  // Rediriger si déjà connecté
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        router.push("/dashboard")
-      }
+    if (user) {
+      router.push("/dashboard")
     }
-
-    checkSession()
-  }, [router])
+  }, [user, router])
 
   useEffect(() => {
     if (errorParam) {
-      if (errorParam === "callback_error") {
-        setError("Erreur lors de la confirmation de votre email. Veuillez réessayer ou contacter le support.")
-      } else if (errorParam === "callback_exception") {
-        setError("Une erreur technique s'est produite. Veuillez réessayer ultérieurement.")
-      } else {
-        setError(decodeURIComponent(errorParam))
-      }
+      setError(decodeURIComponent(errorParam))
     }
-  }, [errorParam])
+    if (registeredParam === "true") {
+      setError("")
+    }
+  }, [errorParam, registeredParam])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,7 +63,20 @@ export default function SignInPage() {
       console.log("Connexion réussie:", data.user?.id)
       setSuccess(true)
 
-      // Redirection après un court délai pour permettre à la session d'être établie
+      // Vérifier si le profil existe
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .single()
+
+      if (profileError && profileError.code === "PGRST116") {
+        // Profil non trouvé, rediriger vers la page de création forcée
+        router.push("/auth/force-profile-creation")
+        return
+      }
+
+      // Redirection après un court délai
       setTimeout(() => {
         router.push("/dashboard")
       }, 1000)
@@ -75,7 +84,7 @@ export default function SignInPage() {
       if (error.message.includes("Invalid login credentials")) {
         setError("Email ou mot de passe incorrect")
       } else if (error.message.includes("Email not confirmed")) {
-        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
+        setError("Veuillez confirmer votre email avant de vous connecter.")
       } else {
         setError(error.message || "Erreur de connexion")
       }
@@ -109,6 +118,17 @@ export default function SignInPage() {
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                   <AlertDescription className="text-green-700">
                     Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
+
+            {registeredParam === "true" && (
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <AlertDescription className="text-green-700">
+                    Inscription réussie ! Vous pouvez maintenant vous connecter.
                   </AlertDescription>
                 </div>
               </Alert>
@@ -179,7 +199,7 @@ export default function SignInPage() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Pas encore de compte ?{" "}
-                <Link href="/auth/signup" className="text-blue-600 hover:text-blue-500">
+                <Link href="/register" className="text-blue-600 hover:text-blue-500">
                   Créer un compte
                 </Link>
               </p>
