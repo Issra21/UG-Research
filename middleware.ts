@@ -1,47 +1,32 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Skip middleware for static files and API routes
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".") ||
-    pathname === "/favicon.ico"
-  ) {
-    return NextResponse.next()
-  }
-
-  // Create a Supabase client for the middleware
+export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
+  const supabase = createMiddlewareClient({ req, res })
 
-  // Refresh session if available
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Protéger les routes qui nécessitent une authentification
-  const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
-
-  // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié
-  if (isProtectedRoute && !session) {
-    const redirectUrl = new URL("/auth/signin", request.url)
+  // Vérifier si l'utilisateur est connecté pour accéder au tableau de bord
+  if (req.nextUrl.pathname.startsWith("/dashboard") && !session) {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = "/login"
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Rediriger vers le tableau de bord si l'utilisateur est déjà connecté
-  const authRoutes = ["/auth/signin", "/auth/signup"]
-  if (authRoutes.includes(pathname) && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+  // Rediriger les utilisateurs connectés de login/register vers dashboard
+  if ((req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/register") && session) {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = "/dashboard"
+    return NextResponse.redirect(redirectUrl)
   }
 
   return res
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/dashboard/:path*", "/login", "/register"],
 }
