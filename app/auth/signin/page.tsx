@@ -10,42 +10,24 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+import { Loader2 } from "lucide-react"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const errorParam = searchParams.get("error")
-  const verifiedParam = searchParams.get("verified")
-
-  // Vérifier si l'utilisateur est déjà connecté
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        router.push("/dashboard")
-      }
-    }
-
-    checkSession()
-  }, [router])
+  const redirectTo = searchParams.get("redirectTo") || "/dashboard"
 
   useEffect(() => {
-    if (errorParam) {
-      if (errorParam === "callback_error") {
-        setError("Erreur lors de la confirmation de votre email. Veuillez réessayer ou contacter le support.")
-      } else if (errorParam === "callback_exception") {
-        setError("Une erreur technique s'est produite. Veuillez réessayer ultérieurement.")
-      } else {
-        setError(decodeURIComponent(errorParam))
-      }
+    if (!authLoading && user) {
+      router.push(redirectTo)
     }
-  }, [errorParam])
+  }, [user, authLoading, router, redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,35 +35,53 @@ export default function SignInPage() {
     setError("")
 
     try {
-      console.log("Tentative de connexion avec:", email)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password,
+        password: password,
       })
 
       if (error) {
-        console.error("Erreur de connexion:", error.message)
         throw error
       }
 
-      console.log("Connexion réussie:", data.user?.id)
-      setSuccess(true)
-
-      // Redirection après un court délai pour permettre à la session d'être établie
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000)
+      if (data.user && !data.user.email_confirmed_at) {
+        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
+        setLoading(false)
+        return
+      }
     } catch (error: any) {
       if (error.message.includes("Invalid login credentials")) {
         setError("Email ou mot de passe incorrect")
       } else if (error.message.includes("Email not confirmed")) {
-        setError("Veuillez confirmer votre email avant de vous connecter. Vérifiez votre boîte de réception.")
+        setError("Veuillez confirmer votre email avant de vous connecter")
       } else {
         setError(error.message || "Erreur de connexion")
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Vérification de l&apos;authentification...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Redirection en cours...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -103,78 +103,49 @@ export default function SignInPage() {
             <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
           </CardHeader>
           <CardContent>
-            {verifiedParam === "true" && (
-              <Alert className="mb-4 bg-green-50 border-green-200">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <AlertDescription className="text-green-700">
-                    Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2" />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
-                </div>
-              </Alert>
-            )}
+                </Alert>
+              )}
 
-            {error && error.includes("confirmer votre email") && (
-              <div className="mt-2 text-center">
-                <Link href="/auth/resend-confirmation" className="text-sm text-blue-600 hover:underline">
-                  Renvoyer l'email de confirmation
-                </Link>
+              <div className="space-y-2">
+                <Label htmlFor="email">Adresse email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre.email@exemple.com"
+                  required
+                  disabled={loading}
+                />
               </div>
-            )}
 
-            {success ? (
-              <div className="text-center py-4">
-                <Loader2 className="h-8 w-8 text-blue-600 mx-auto animate-spin" />
-                <p className="mt-2 text-sm text-gray-600">Connexion réussie! Redirection en cours...</p>
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Adresse email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="votre.email@exemple.com"
-                    required
-                    disabled={loading}
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connexion en cours...
-                    </>
-                  ) : (
-                    "Se connecter"
-                  )}
-                </Button>
-              </form>
-            )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connexion en cours...
+                  </>
+                ) : (
+                  "Se connecter"
+                )}
+              </Button>
+            </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">

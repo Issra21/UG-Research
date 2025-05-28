@@ -50,10 +50,10 @@ export default function HomePage() {
               <span className="text-xl font-bold text-gray-900">UG-Research</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
+              <Link href="/auth/signin">
                 <Button variant="ghost">Se connecter</Button>
               </Link>
-              <Link href="/register">
+              <Link href="/auth/signup">
                 <Button>S&apos;inscrire</Button>
               </Link>
             </div>
@@ -73,7 +73,7 @@ export default function HomePage() {
             scientifique et la visibilité de vos travaux de recherche.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
+            <Link href="/auth/signup">
               <Button size="lg" className="w-full sm:w-auto">
                 Créer un compte
               </Button>

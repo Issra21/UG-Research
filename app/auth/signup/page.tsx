@@ -14,7 +14,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { UserRole } from "@/lib/types"
 import { Mail, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { getAuthCallbackURL } from "@/lib/supabase-config"
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -63,14 +62,10 @@ export default function SignUpPage() {
     }
 
     try {
-      console.log("Tentative d'inscription avec redirection vers:", getAuthCallbackURL())
-
-      // Créer d'abord le compte
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: getAuthCallbackURL(),
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -85,10 +80,8 @@ export default function SignUpPage() {
       })
 
       if (error) throw error
-
       setSuccess(true)
     } catch (error: any) {
-      console.error("Erreur d'inscription:", error)
       setError(error.message || "Erreur lors de la création du compte")
     } finally {
       setLoading(false)
@@ -106,16 +99,14 @@ export default function SignUpPage() {
             <div className="p-4 bg-blue-50 rounded-lg">
               <Mail className="h-8 w-8 text-blue-600 mx-auto mb-2" />
               <p className="text-sm text-gray-700">
-                Un email de confirmation a été envoyé à <strong>{formData.email}</strong>
+                Votre compte a été créé avec l&apos;email <strong>{formData.email}</strong>
               </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Veuillez cliquer sur le lien dans l'email pour activer votre compte
-              </p>
+              <p className="text-xs text-gray-500 mt-2">Vous pouvez maintenant vous connecter avec vos identifiants</p>
             </div>
 
             <div className="space-y-2">
               <Button onClick={() => router.push("/auth/signin")} className="w-full">
-                Aller à la page de connexion
+                Se connecter
               </Button>
             </div>
           </CardContent>

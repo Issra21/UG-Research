@@ -25,7 +25,13 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 })
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -35,144 +41,105 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Fonction pour charger le profil utilisateur
-    const loadProfile = async (userId: string) => {
-      try {
-        console.log("Chargement du profil pour l'utilisateur:", userId)
+    let mounted = true
 
-        // Vérifier d'abord si le profil existe
-        const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
-
-        if (error) {
-          console.error("Erreur lors du chargement du profil:", error)
-
-          // Si le profil n'existe pas, essayer de le créer
-          if (error.code === "PGRST116") {
-            console.log("Profil non trouvé, tentative de création...")
-            await createProfile(userId)
-          } else {
-            setProfile(null)
-          }
-        } else {
-          console.log("Profil chargé avec succès:", data)
-          setProfile(data)
-        }
-      } catch (error) {
-        console.error("Exception lors du chargement du profil:", error)
-        setProfile(null)
-      }
-    }
-
-    // Fonction pour créer un profil s'il n'existe pas
-    const createProfile = async (userId: string) => {
-      try {
-        // Obtenir les informations de l'utilisateur
-        const { data: userData } = await supabase.auth.getUser(userId)
-
-        if (!userData.user) {
-          console.error("Utilisateur non trouvé")
-          return
-        }
-
-        const { email, user_metadata } = userData.user
-
-        // Créer le profil
-        const { data, error } = await supabase
-          .from("profiles")
-          .insert({
-            id: userId,
-            email: email || "",
-            first_name: user_metadata?.first_name || "",
-            last_name: user_metadata?.last_name || "",
-            role: user_metadata?.role || "researcher",
-            is_active: true,
-          })
-          .select()
-
-        if (error) {
-          console.error("Erreur lors de la création du profil:", error)
-        } else if (data && data.length > 0) {
-          console.log("Profil créé avec succès:", data[0])
-          setProfile(data[0])
-        }
-      } catch (error) {
-        console.error("Exception lors de la création du profil:", error)
-      }
-    }
-
-    // Fonction pour obtenir la session initiale
     const getInitialSession = async () => {
       try {
-        setLoading(true)
-        console.log("Récupération de la session initiale...")
-
         const {
           data: { session },
         } = await supabase.auth.getSession()
-        console.log("Session récupérée:", session ? "Session trouvée" : "Aucune session")
 
-        setSession(session)
-        setUser(session?.user ?? null)
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
 
-        if (session?.user) {
-          await loadProfile(session.user.id)
+          if (session?.user) {
+            await loadProfile(session.user.id)
+          } else {
+            setLoading(false)
+          }
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération de la session:", error)
-      } finally {
-        setLoading(false)
+        console.error("Error in getInitialSession:", error)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     getInitialSession()
 
-    // Configurer l'écouteur d'événements d'authentification
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Événement d'authentification:", event)
+      if (!mounted) return
+
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
         await loadProfile(session.user.id)
+
+        if (event === "SIGNED_IN" && typeof window !== "undefined") {
+          const currentPath = window.location.pathname
+          if (currentPath.startsWith("/auth/")) {
+            router.push("/dashboard")
+          }
+        }
       } else {
         setProfile(null)
-      }
+        setLoading(false)
 
-      setLoading(false)
+        if (event === "SIGNED_OUT" && typeof window !== "undefined") {
+          const currentPath = window.location.pathname
+          const protectedRoutes = ["/dashboard", "/profile", "/publications", "/projects", "/researchers"]
+          if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
+            router.push("/auth/signin")
+          }
+        }
+      }
     })
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [router])
+
+  const loadProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          setProfile(null)
+        } else {
+          throw error
+        }
+      } else {
+        setProfile(data)
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error)
+      setProfile(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const refreshProfile = async () => {
     if (user) {
       setLoading(true)
-      try {
-        const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-        if (error) {
-          console.error("Erreur lors du rafraîchissement du profil:", error)
-        } else {
-          setProfile(data)
-        }
-      } catch (error) {
-        console.error("Exception lors du rafraîchissement du profil:", error)
-      } finally {
-        setLoading(false)
-      }
+      await loadProfile(user.id)
     }
   }
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
-      router.push("/")
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error)
+      console.error("Error signing out:", error)
     }
   }
 
