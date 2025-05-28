@@ -145,7 +145,7 @@ export default function ConfirmSuccessPage() {
             <div className="space-y-4">
               <p className="text-red-600">{error}</p>
               <div className="space-y-2">
-                <Link href="/auth/signin">
+                <Link href="/login">
                   <Button className="w-full">Aller à la page de connexion</Button>
                 </Link>
                 <Link href="/auth/resend-confirmation">

@@ -25,6 +25,7 @@ export default function LoginPage() {
 
   const errorParam = searchParams.get("error")
   const registeredParam = searchParams.get("registered")
+  const verifiedParam = searchParams.get("verified")
 
   // Rediriger si déjà connecté
   useEffect(() => {
@@ -62,6 +63,19 @@ export default function LoginPage() {
       console.log("Connexion réussie:", data.user?.id)
       setSuccess(true)
 
+      // Vérifier si le profil existe
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .single()
+
+      if (profileError && profileError.code === "PGRST116") {
+        // Profil non trouvé, rediriger vers la page de création forcée
+        router.push("/auth/force-profile-creation")
+        return
+      }
+
       // Redirection après un court délai
       setTimeout(() => {
         router.push("/dashboard")
@@ -98,6 +112,17 @@ export default function LoginPage() {
             <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
           </CardHeader>
           <CardContent>
+            {verifiedParam === "true" && (
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <AlertDescription className="text-green-700">
+                    Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
+
             {registeredParam === "true" && (
               <Alert className="mb-4 bg-green-50 border-green-200">
                 <div className="flex items-center">
@@ -116,6 +141,14 @@ export default function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </div>
               </Alert>
+            )}
+
+            {error && error.includes("confirmer votre email") && (
+              <div className="mt-2 text-center">
+                <Link href="/auth/resend-confirmation" className="text-sm text-blue-600 hover:underline">
+                  Renvoyer l'email de confirmation
+                </Link>
+              </div>
             )}
 
             {success ? (
@@ -168,6 +201,11 @@ export default function LoginPage() {
                 Pas encore de compte ?{" "}
                 <Link href="/register" className="text-blue-600 hover:text-blue-500">
                   Créer un compte
+                </Link>
+              </p>
+              <p className="mt-2 text-sm">
+                <Link href="/auth/forgot-password" className="text-blue-600 hover:text-blue-500">
+                  Mot de passe oublié ?
                 </Link>
               </p>
             </div>

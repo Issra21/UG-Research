@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, User, Mail, Building, GraduationCap } from "lucide-react"
+import EnsureProfile from "@/components/ensure-profile"
 
 export default function DashboardPage() {
   const { user, profile, loading, signOut } = useAuth()
@@ -60,6 +61,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <EnsureProfile />
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
           <p className="text-gray-600">Bienvenue sur votre espace chercheur</p>
@@ -131,7 +134,7 @@ export default function DashboardPage() {
                 <CardDescription>Accès rapide aux fonctionnalités</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={() => router.push("/profile")}>
                   Modifier mon profil
                 </Button>
                 <Button className="w-full" variant="outline">
