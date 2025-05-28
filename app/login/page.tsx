@@ -1,107 +1,178 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase"
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
 
-export default function Login() {
+export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user } = useAuth()
+
+  const errorParam = searchParams.get("error")
+  const registeredParam = searchParams.get("registered")
+
+  // Rediriger si déjà connecté
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard")
+    }
+  }, [user, router])
 
   useEffect(() => {
-    // Vérifier si l'utilisateur vient de s'inscrire
-    if (searchParams?.get("registered") === "true") {
-      setSuccessMessage("Inscription réussie! Vous pouvez maintenant vous connecter.")
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
     }
-  }, [searchParams])
+    if (registeredParam === "true") {
+      setError("")
+    }
+  }, [errorParam, registeredParam])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
+    setError("")
 
     try {
-      // Connexion avec Supabase
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      console.log("Tentative de connexion avec:", email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Erreur de connexion:", error.message)
+        throw error
+      }
 
-      // Rediriger vers le tableau de bord
-      router.push("/dashboard")
+      console.log("Connexion réussie:", data.user?.id)
+      setSuccess(true)
+
+      // Redirection après un court délai
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } catch (error: any) {
-      setError(error.message || "Une erreur s'est produite lors de la connexion")
+      if (error.message.includes("Invalid login credentials")) {
+        setError("Email ou mot de passe incorrect")
+      } else if (error.message.includes("Email not confirmed")) {
+        setError("Veuillez confirmer votre email avant de vous connecter.")
+      } else {
+        setError(error.message || "Erreur de connexion")
+      }
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h1 className="text-2xl font-bold text-center">Connexion</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">UG</span>
+            </div>
+          </div>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">Connexion à UG-Research</h2>
+          <p className="mt-2 text-sm text-gray-600">Accédez à votre espace chercheur</p>
         </div>
 
-        {successMessage && <div className="bg-green-50 text-green-600 p-3 rounded-md">{successMessage}</div>}
+        <Card>
+          <CardHeader>
+            <CardTitle>Se connecter</CardTitle>
+            <CardDescription>Entrez vos identifiants pour accéder à votre compte</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {registeredParam === "true" && (
+              <Alert className="mb-4 bg-green-50 border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <AlertDescription className="text-green-700">
+                    Inscription réussie ! Vous pouvez maintenant vous connecter.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
 
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-md">{error}</div>}
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  <AlertDescription>{error}</AlertDescription>
+                </div>
+              </Alert>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
+            {success ? (
+              <div className="text-center py-4">
+                <Loader2 className="h-8 w-8 text-blue-600 mx-auto animate-spin" />
+                <p className="mt-2 text-sm text-gray-600">Connexion réussie! Redirection en cours...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Adresse email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre.email@exemple.com"
+                    required
+                    disabled={loading}
+                  />
+                </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Mot de passe
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {loading ? "Connexion en cours..." : "Se connecter"}
-            </button>
-          </div>
-        </form>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    "Se connecter"
+                  )}
+                </Button>
+              </form>
+            )}
 
-        <div className="text-sm text-center">
-          <Link href="/register" className="text-blue-600 hover:text-blue-500">
-            Pas encore de compte? S'inscrire
-          </Link>
-        </div>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Pas encore de compte ?{" "}
+                <Link href="/register" className="text-blue-600 hover:text-blue-500">
+                  Créer un compte
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
