@@ -103,7 +103,7 @@ export default function ForceProfileCreationPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
               <div className="flex flex-col space-y-2">
-                <Button onClick={() => router.push("/login")}>Retour à la connexion</Button>
+                <Button onClick={() => router.push("/auth/signin")}>Retour à la connexion</Button>
                 <Button variant="outline" onClick={() => window.location.reload()}>
                   Réessayer
                 </Button>

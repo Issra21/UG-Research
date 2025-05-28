@@ -5,10 +5,6 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  
-  // Logs pour déboguer
-  console.log("Callback URL:", request.url)
-  console.log("Code présent:", !!code)
 
   if (code) {
     try {
@@ -20,7 +16,9 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         console.error("Erreur lors de l'échange du code:", error)
-        return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, requestUrl.origin))
+        return NextResponse.redirect(
+          new URL(`/auth/signin?error=${encodeURIComponent(error.message)}`, requestUrl.origin),
+        )
       }
 
       // Obtenir la session après l'échange
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", requestUrl.origin))
     } catch (error) {
       console.error("Exception lors de l'échange du code:", error)
-      return NextResponse.redirect(new URL("/login?error=callback_exception", requestUrl.origin))
+      return NextResponse.redirect(new URL("/auth/signin?error=callback_exception", requestUrl.origin))
     }
   }
 
